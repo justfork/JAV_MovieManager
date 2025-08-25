@@ -1,0 +1,22 @@
+.studio-search-bar {
+    width: 200px;
+}
+
+.studio-button {
+    margin: 5px;
+    width: 250px;
+    height: 60px;
+}
+
+.studio-span {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+    overflow: hidden;
+    width: 220px;
+    text-overflow: ellipsis;
+}
+
+.studio-list {
+    margin: 5px;
+}
