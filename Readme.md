@@ -1,6 +1,8 @@
 # Potplayer下载和使用教程
-- 下载：https://github.com/4evergaeul/JAV_MovieManager/blob/main/Installation/PotPlayerSetup64.exe
-- 使用方法：https://github.com/4evergaeul/JAV_MovieManager/blob/main/Installation/Tutorial.mp4
+**截至8/29/2025，potplayer已继承在软件包中，故不再需要安装potplayer，如果使用上仍有问题，请加issue**
+- 初次使用无法添加播放列表解决方法：https://github.com/4evergaeul/JAV_MovieManager/blob/main/Installation/Tutorial.mp4
+  
+~~- Potplayer下载：https://github.com/4evergaeul/JAV_MovieManager/blob/main/Installation/PotPlayerSetup64.exe~~
 
 # 软件更新方法
 1. 在[发布页面](https://github.com/4evergaeul/JAV_MovieManager/releases/tag/v1.4.3)找到最新版本
@@ -27,17 +29,15 @@ https://t.me/+9JBjtAz_EqhmMmRh
 此时数据整理完毕，之后可以把处理过后的文件夹全部移动到你的影片库位置。
 
 ## 第二步：安装软件
-1. 安装PotPlayerSetup64,建议使用默认安装位置 ```C:\Program Files\``` 以便之后无需重新在软件内配置。
+1. 在一切安装完毕后，即可以解压MovieManager。双击"MovieManager.TrayApp.exe"运行。此时会弹窗“程序正在初始化”，请等待大约5-10秒。
 
-2. 在一切安装完毕后，即可以解压MovieManager。双击"MovieManager.TrayApp.exe"运行。此时会弹窗“程序正在初始化”，请等待大约10-30秒。
-
-3. 程序初始化完毕后，弹窗会自动关闭，并且程序会用默认浏览器打开。并且程序也会出现在<b>屏幕右下角的托盘图标中</b>，如下图。
+2. 程序初始化完毕后，弹窗会自动关闭，并且程序会用默认浏览器打开。并且程序也会出现在<b>屏幕右下角的托盘图标中</b>，如下图。
 ![](Readme/Picture9.png)
 
-4. 右键图标，点击"打开"。这个时候默认浏览器会打开影片管理器。点击<b>设置</b>。
+3. 右键图标，点击"打开"。这个时候默认浏览器会打开影片管理器。点击<b>设置</b>。
 ![](Readme/Picture10.png)
 
-5.  下面是设置表格的介绍：
+4.  下面是设置表格的介绍：
 <b>（必须）</b> “文件夹”： 设置为你的影片目录（需要手动输入，或把地址复制粘贴过去）。e.g.``` J:\MyFile\New\有码\演员```。<br>
 如果需要测试，可以在文件夹下找到TestingMovieLib，把该文件夹设置为影片目录即可。<br>
 演员头像库请从该库下载：https://github.com/gfriends/gfriends<br>
@@ -47,7 +47,7 @@ https://t.me/+9JBjtAz_EqhmMmRh
 “扫描多少天内加的电影”：如果这里的数值设为<b>-1</b>，则搜索所有电影。<br>
 ![](Readme/Picture11.png)
 
-6. 在一切配置完成后，点击“保存设置”->“添加新电影”。 程序就会开始构建影片库，这个时长会根据你影片数量而定。影片库构建完成后页面会刷新并返回电影页面。（如果点击保存设置后，程序未能立刻保存，说明后端程序没有正常运行，右键点击托盘栏图标并点击退出，重新运行程序即可）
+5. 在一切配置完成后，点击“保存设置”->“添加新电影”。 程序就会开始构建影片库，这个时长会根据你影片数量而定。影片库构建完成后页面会刷新并返回电影页面。（如果点击保存设置后，程序未能立刻保存，说明后端程序没有正常运行，右键点击托盘栏图标并点击退出，重新运行程序即可）
 
 配置完成后类似下图。
 ![](Readme/Picture12.png)

@@ -19,7 +19,7 @@ namespace MovieManager.BusinessLogic
             _movieService = movieService;
         }
 
-        public void BuildPlayList(string playListName, string path, List<PlayListItem> movies, FileMode fileMode = FileMode.Create)
+        public void BuildPlayList(string playListName, string path, List<PlayListItem> movies, string potPlayerExe, FileMode fileMode = FileMode.Create)
         {
             if (playListName.Contains("undefined"))
             { 
@@ -29,36 +29,16 @@ namespace MovieManager.BusinessLogic
             {
                 var movieLocations = movies.Select(x => x.MovieLocation.Split("|").Where(x => !string.IsNullOrEmpty(x)).ToList()).ToList();
                 var imdbIds = movies.Select(x => x.ImdbId).ToList();
-                var fs = new FileStream($"{path}\\{playListName.Replace(":", "-")}.dpl", fileMode);
-                using(var writer = new StreamWriter(fs))
+                
+                // Determine playlist paths to write to
+                var playlistPaths = GetPlaylistPaths(path, potPlayerExe);
+                
+                foreach (var playlistPath in playlistPaths)
                 {
-                    if(fileMode == FileMode.Create)
-                    {
-                        var defaultInput = "DAUMPLAYLIST\nplaytime=0\ntopindex=0\nfoldertype=2\nsaveplaypos=0\n";
-                        writer.WriteLine(defaultInput);
-                    }
-                    var count = 1;
-                    for (int i = 0; i < movieLocations.Count; i++)
-                    {                        
-                        foreach (var movieLocation in movieLocations[i]) 
-                        {
-                            var l = $"{count++}*file*{movieLocation}";
-                            writer.WriteLine(l);
-                        }
-                    }
+                    CreatePlaylistFile(playListName, playlistPath, movieLocations, fileMode);
                 }
-                using(var context = new DatabaseContext())
-                {
-                    foreach(var imdbId in imdbIds)
-                    {
-                        var movie = context.Movies.Where(x => x.ImdbId == imdbId).FirstOrDefault();
-                        if(movie != null)
-                        {
-                            movie.PlayedCount += 1;
-                        }
-                        context.SaveChanges();
-                    }
-                }
+                
+                UpdateMoviePlayCount(imdbIds);
             }
             catch(Exception ex)
             {
@@ -67,7 +47,7 @@ namespace MovieManager.BusinessLogic
             }
         }
 
-        public void BuildPlayListByActors(string playListName, string path, List<string> actors, FileMode fileMode = FileMode.Create)
+        public void BuildPlayListByActors(string playListName, string path, List<string> actors, string potPlayerExe, FileMode fileMode = FileMode.Create)
         {
             try
             {
@@ -88,36 +68,147 @@ namespace MovieManager.BusinessLogic
                     }
                 }
                 
-                var fs = new FileStream($"{path}\\{playListName.Replace(":", "-")}.dpl", fileMode);
-                using (var writer = new StreamWriter(fs))
+                // Determine playlist paths to write to
+                var playlistPaths = GetPlaylistPaths(path, potPlayerExe);
+                var movieLocationsList = new List<List<string>>();
+                for (int i = 0; i < movieLocations.Count; i++)
                 {
-                    if (fileMode == FileMode.Create)
-                    {
-                        var defaultInput = "DAUMPLAYLIST\nplaytime=0\ntopindex=0\nfoldertype=2\nsaveplaypos=0\n";
-                        writer.WriteLine(defaultInput);
-                    }
-                    for (int i = 0; i < movieLocations.Count; i++)
-                    {
-                        writer.WriteLine($"{i + 1}*file*{movieLocations[i]}");
-                    }
+                    movieLocationsList.Add(new List<string> { movieLocations[i] });
                 }
-                using (var context = new DatabaseContext())
+                
+                foreach (var playlistPath in playlistPaths)
                 {
-                    foreach (var imdbId in imdbIds)
-                    {
-                        var movie = context.Movies.Where(x => x.ImdbId == imdbId).FirstOrDefault();
-                        if (movie != null)
-                        {
-                            movie.PlayedCount += 1;
-                        }
-                        context.SaveChanges();
-                    }
+                    CreatePlaylistFile(playListName, playlistPath, movieLocationsList, fileMode);
                 }
+                
+                UpdateMoviePlayCount(imdbIds);
             }
             catch (Exception ex)
             {
                 Log.Error($"An error occurs when creating potplayer list. \n\r");
                 Log.Error(ex.ToString());
+            }
+        }
+
+        private List<string> GetPlaylistPaths(string defaultPath, string potPlayerExe)
+        {
+            var paths = new List<string>();
+            
+            // Ensure Playlist folder exists in potPlayerExe directory
+            if (!string.IsNullOrEmpty(potPlayerExe))
+            {
+                string potPlayerExeDir = Path.GetDirectoryName(potPlayerExe);
+                string potPlayerPlaylistPath = Path.Combine(potPlayerExeDir, "Playlist");
+                if (!Directory.Exists(potPlayerPlaylistPath))
+                {
+                    Directory.CreateDirectory(potPlayerPlaylistPath);
+                }
+            }
+            
+            // Check if default playlist directory exists
+            if (Directory.Exists(defaultPath))
+            {
+                // If default directory exists, add both default and PotPlayer directories
+                paths.Add(defaultPath);
+                
+                // Get PotPlayer directory from database and add its Playlist folder
+                string potPlayerDbDirectory = GetPotPlayerDirectoryFromDatabase();
+                if (!string.IsNullOrEmpty(potPlayerDbDirectory))
+                {
+                    string potPlayerPlaylistPath = Path.Combine(Path.GetDirectoryName(potPlayerDbDirectory), "Playlist");
+                    if (!Directory.Exists(potPlayerPlaylistPath))
+                    {
+                        // Create the Playlist directory if it doesn't exist
+                        Directory.CreateDirectory(potPlayerPlaylistPath);
+                    }
+                    paths.Add(potPlayerPlaylistPath);
+                }
+            }
+            else
+            {
+                // If default directory doesn't exist, use PotPlayer directory from database
+                string potPlayerDbDirectory = GetPotPlayerDirectoryFromDatabase();
+                if (!string.IsNullOrEmpty(potPlayerDbDirectory))
+                {
+                    string potPlayerPlaylistPath = Path.Combine(Path.GetDirectoryName(potPlayerDbDirectory), "Playlist");
+                    if (!Directory.Exists(potPlayerPlaylistPath))
+                    {
+                        Directory.CreateDirectory(potPlayerPlaylistPath);
+                    }
+                    paths.Add(potPlayerPlaylistPath);
+                }
+                else
+                {
+                    // Fallback to default path if database doesn't have PotPlayer directory
+                    Directory.CreateDirectory(defaultPath);
+                    paths.Add(defaultPath);
+                }
+            }
+            
+            return paths;
+        }
+
+        private string GetPotPlayerDirectoryFromDatabase()
+        {
+            try
+            {
+                using (var context = new DatabaseContext())
+                {
+                    var sqlString = "select Value from UserSettings where Name = 'PotPlayerDirectory'";
+                    var dbValue = context.Database.SqlQuery<string>(sqlString).FirstOrDefault();
+                    
+                    // If database value is empty, use default location
+                    if (string.IsNullOrEmpty(dbValue))
+                    {
+                        return Path.Combine(Environment.CurrentDirectory, "Potplayer", "PotPlayerMini64.exe");
+                    }
+                    
+                    return dbValue;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Error getting PotPlayer directory from database: {ex}");
+                // Return default location as fallback
+                return Path.Combine(Environment.CurrentDirectory, "Potplayer", "PotPlayerMini64.exe");
+            }
+        }
+
+        private void CreatePlaylistFile(string playListName, string path, List<List<string>> movieLocations, FileMode fileMode)
+        {
+            var fs = new FileStream($"{path}\\{playListName.Replace(":", "-")}.dpl", fileMode);
+            using (var writer = new StreamWriter(fs))
+            {
+                if (fileMode == FileMode.Create)
+                {
+                    var defaultInput = "DAUMPLAYLIST\nplaytime=0\ntopindex=0\nfoldertype=2\nsaveplaypos=0\n";
+                    writer.WriteLine(defaultInput);
+                }
+                var count = 1;
+                for (int i = 0; i < movieLocations.Count; i++)
+                {
+                    foreach (var movieLocation in movieLocations[i])
+                    {
+                        var l = $"{count++}*file*{movieLocation}";
+                        writer.WriteLine(l);
+                    }
+                }
+            }
+        }
+
+        private void UpdateMoviePlayCount(IEnumerable<string> imdbIds)
+        {
+            using (var context = new DatabaseContext())
+            {
+                foreach (var imdbId in imdbIds)
+                {
+                    var movie = context.Movies.Where(x => x.ImdbId == imdbId).FirstOrDefault();
+                    if (movie != null)
+                    {
+                        movie.PlayedCount += 1;
+                    }
+                    context.SaveChanges();
+                }
             }
         }
     }

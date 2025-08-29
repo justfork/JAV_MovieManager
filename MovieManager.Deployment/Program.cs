@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.IO.Compression;
 using Newtonsoft.Json.Linq;
 using System.Diagnostics;
 using System.Xml;
@@ -183,7 +184,16 @@ namespace MovieManager.Deployment
                 File.Delete(dbDestPathReturningUser);
             }
 
-            // Step 8: Fix App.config in both copies
+            // Step 8: Copy Potplayer folder to both distribution folders
+            string potPlayerSourcePath = Path.Combine(solutionDirectory, "Potplayer");
+            string potPlayerDestPathNewUser = Path.Combine(newUserFolder, "Potplayer");
+            string potPlayerDestPathReturningUser = Path.Combine(returningUserFolder, "Potplayer");
+            
+            Console.WriteLine("Copying PotPlayer to distribution folders...");
+            CopyDirectory(potPlayerSourcePath, potPlayerDestPathNewUser);
+            CopyDirectory(potPlayerSourcePath, potPlayerDestPathReturningUser);
+
+            // Step 9: Fix App.config in both copies
             string newUserConfig = Path.Combine(newUserFolder, "MovieManager.TrayApp.dll.config");
             string returningUserConfig = Path.Combine(returningUserFolder, "MovieManager.TrayApp.dll.config");
 
@@ -193,13 +203,26 @@ namespace MovieManager.Deployment
             if (File.Exists(returningUserConfig))
                 UpdateConfig(returningUserConfig, "DatabaseLocation", "MovieDb.db");
 
-            // Step 9: Clean up temporary publish files in win-x64 directory
+            // Step 10: Compress distribution folders to zip files
+            Console.WriteLine("Compressing distribution folders...");
+            string newUserZipPath = $"{newUserFolder}.zip";
+            string returningUserZipPath = $"{returningUserFolder}.zip";
+            
+            ZipFile.CreateFromDirectory(newUserFolder, newUserZipPath);
+            ZipFile.CreateFromDirectory(returningUserFolder, returningUserZipPath);
+            
+            Console.WriteLine($"Created zip file: {newUserZipPath}");
+            Console.WriteLine($"Created zip file: {returningUserZipPath}");
+
+            // Step 11: Clean up temporary publish files in win-x64 directory
             Console.WriteLine("Cleaning up temporary build files...");
             CleanupPublishDirectory(Path.GetDirectoryName(trayPublishFolder));
 
             Console.WriteLine("Self-Contained Deployment complete:");
             Console.WriteLine($" - NewUser build created at: {newUserFolder}");
             Console.WriteLine($" - ReturningUser build created at: {returningUserFolder}");
+            Console.WriteLine($" - NewUser zip file: {newUserZipPath}");
+            Console.WriteLine($" - ReturningUser zip file: {returningUserZipPath}");
             Console.WriteLine();
             Console.WriteLine("NOTE: These builds are self-contained and do not require .NET Core runtime to be installed on target machines.");
             Console.WriteLine("Users can run MovieManager.TrayApp.exe directly without installing any dependencies.");
@@ -281,10 +304,11 @@ namespace MovieManager.Deployment
                 {
                     string itemName = Path.GetFileName(item);
                     
-                    // Keep only the distribution folders (those containing "MovieManager_")
-                    if (Directory.Exists(item) && itemName.StartsWith("MovieManager_"))
+                    // Keep distribution folders and zip files (those containing "MovieManager_")
+                    if ((Directory.Exists(item) && itemName.StartsWith("MovieManager_")) ||
+                        (File.Exists(item) && itemName.StartsWith("MovieManager_") && itemName.EndsWith(".zip")))
                     {
-                        continue; // Keep distribution folders
+                        continue; // Keep distribution folders and zip files
                     }
                     
                     // Delete everything else

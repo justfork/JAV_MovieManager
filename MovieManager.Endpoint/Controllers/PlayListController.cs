@@ -5,6 +5,7 @@ using MovieManager.ClassLibrary;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -22,7 +23,16 @@ namespace MovieManager.Endpoint.Controllers
         public PlayListController(PotPlayerService potPlayerService, UserSettingsService userSettingsService)
         {
             _potPlayerService = potPlayerService;
-            potPlayerExe = userSettingsService.GetUserSettings().PotPlayerDirectory;
+            var userPotPlayerDir = userSettingsService.GetUserSettings().PotPlayerDirectory;
+            // Use default location if user setting is empty
+            if (string.IsNullOrEmpty(userPotPlayerDir))
+            {
+                potPlayerExe = Path.Combine(Environment.CurrentDirectory, "Potplayer", "PotPlayerMini64.exe");
+            }
+            else
+            {
+                potPlayerExe = userPotPlayerDir;
+            }
         }
 
 
@@ -36,7 +46,7 @@ namespace MovieManager.Endpoint.Controllers
             }
             try
             {
-                _potPlayerService.BuildPlayList(playListName, path, movies);
+                _potPlayerService.BuildPlayList(playListName, path, movies, potPlayerExe);
                 Process.Start(potPlayerExe);
             }
             catch (Exception ex)
@@ -56,7 +66,7 @@ namespace MovieManager.Endpoint.Controllers
             }
             try
             {
-                _potPlayerService.BuildPlayListByActors(playListName, path, actors);
+                _potPlayerService.BuildPlayListByActors(playListName, path, actors, potPlayerExe);
                 Process.Start(potPlayerExe);
             }
             catch (Exception ex)
@@ -76,7 +86,7 @@ namespace MovieManager.Endpoint.Controllers
             }
             try
             {
-                _potPlayerService.BuildPlayList("TempPlayList", path, movies, System.IO.FileMode.Append);
+                _potPlayerService.BuildPlayList("播放列表", path, movies, potPlayerExe, System.IO.FileMode.Append);
                 Process.Start(potPlayerExe);
             }
             catch (Exception ex)

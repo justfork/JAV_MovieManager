@@ -211,13 +211,12 @@ const SettingsViewer = forwardRef((props, ref) => {
                     <Form.Item
                         label="PotPlayer文件夹"
                         name="potPlayerDirectory"
-                        rules={[{ required: true }]}
                         wrapperCol={{
                             xs: { span: 24, offset: 0 },
                             sm: { span: 20, offset: 0 },
                         }}
                     >
-                        <Input placeholder="C:\文件夹" style={{ width: "150%", marginRight: 8 }} />
+                        <Input placeholder="留空使用默认位置" style={{ width: "150%", marginRight: 8 }} />
                     </Form.Item>
                     { !switchState && (
                     <Form.Item

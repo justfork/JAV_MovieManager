@@ -62,7 +62,7 @@ const MovieViewer = forwardRef((props, ref) => {
             message.info("加入完毕");
         }).catch((error) => {
             console.log(error);
-            message.info("加入失败!");
+            message.info("添加失败，请检查Potplayer位置是否正确设置");
         });
     }
 
@@ -114,7 +114,7 @@ const MovieViewer = forwardRef((props, ref) => {
             message.info("加入完毕");
         }).catch((error) => {
             console.log(error);
-            message.info("加入失败!");
+            message.info("添加失败，请检查Potplayer位置是否正确设置");
         });
     }
 
