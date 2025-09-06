@@ -5,7 +5,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Windows.Input;
 
 namespace MovieManager.BusinessLogic
 {
@@ -80,8 +82,18 @@ namespace MovieManager.BusinessLogic
                     {
                         try
                         {
-                            var imdbId = _xmlEngine.ParseXmlFile(nfo)?.Title?.Split(' ')?[0];                            
-                            if(!string.IsNullOrEmpty(imdbId))
+                            var imdbId = _xmlEngine.ParseXmlFile(nfo)?.Title?.Split(' ')?[0];
+                            var regex = new Regex(@"^[A-Z]{4}-\d{3,}$");
+                            if (string.IsNullOrEmpty(imdbId) || !regex.IsMatch(imdbId))
+                            {
+                                regex = new Regex(@"[A-Z]{3,5}-\d{2,5}");
+                                var match = regex.Match(_xmlEngine.ParseXmlFile(nfo)?.Title);
+                                if (match.Success)
+                                {
+                                    imdbId = match.Value;
+                                }
+                            }
+                            if (!string.IsNullOrEmpty(imdbId))
                             {
                                 imdbIds.Add(imdbId);
                             }
@@ -116,6 +128,16 @@ namespace MovieManager.BusinessLogic
                     if (movie != null)
                     {
                         var imdb = movie.Title.Split(' ')?[0];
+                        var regex = new Regex(@"^[A-Z]{4}-\d{3,}$");
+                        if (string.IsNullOrEmpty(imdb) || !regex.IsMatch(imdb))
+                        {
+                            regex = new Regex(@"[A-Z]{3,5}-\d{2,5}");
+                            var match = regex.Match(movie.Title);
+                            if (match.Success)
+                            {
+                                imdb = match.Value;
+                            }
+                        }
                         if (!string.IsNullOrEmpty(imdb))
                         {
                             // Update movie locations
